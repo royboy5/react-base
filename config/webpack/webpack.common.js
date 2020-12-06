@@ -1,6 +1,8 @@
 const path = require('path');
+const BundleTracker = require('webpack-bundle-tracker');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const devMode = process.env.NODE_ENV !== 'production';
@@ -25,39 +27,19 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel-loader',
       },
-      // css / scss loader
+      // css
       {
-        test: /\.(sa|sc|c)ss$/,
-        use: [
-          devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
-          'css-loader',
-          {
-            loader: 'postcss-loader',
-            options: {
-              config: {
-                path: path.resolve(__dirname),
-              },
-            },
-          },
-          'sass-loader',
-        ],
-      },
-      // stylus-loader
-      {
-        test: /\.styl$/,
+        test: /\.css$/,
         exclude: /node_modules/,
         use: [
           devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
-          { loader: 'css-loader' },
           {
-            loader: 'postcss-loader',
+            loader: 'css-loader',
             options: {
-              config: {
-                path: path.resolve(__dirname),
-              },
+              importLoaders: 1,
             },
           },
-          { loader: 'stylus-loader' },
+          'postcss-loader',
         ],
       },
       // fonts
@@ -88,9 +70,18 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, '../..', 'public/index.html'),
     }),
+    new BundleTracker({
+      filename: './webpack-stats.json',
+    }),
     new MiniCssExtractPlugin({
-      filename: devMode ? '[name].css' : '[name].[hash].css',
-      chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
+      filename: devMode ? './css/[name].css' : './css/[name].[fullhash].css',
+      chunkFilename: devMode
+        ? './css/[chunkhash].css'
+        : './css/[chunkhash].[fullhash].css',
     }),
   ],
+  optimization: {
+    minimize: true,
+    minimizer: [new CssMinimizerPlugin()],
+  },
 };
